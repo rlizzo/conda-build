@@ -12,6 +12,7 @@ import stat
 from subprocess import call, check_output
 import sys
 from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing import cpu_count
 from itertools import repeat
 try:
     from os import readlink
@@ -455,7 +456,7 @@ def post_build(m, files, prefix, build_python, croot):
 
     check_symlinks(files, prefix, croot)
 
-    pool = ThreadPool(5)
+    pool = ThreadPool(cpu_count())
     
     def multiprocess_mk_relative(m, f, prefix, build_python, osx_is_app, binary_relocation):
         if f.startswith('bin/'):
