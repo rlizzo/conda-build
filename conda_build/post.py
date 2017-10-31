@@ -11,6 +11,8 @@ import os
 import stat
 from subprocess import call, check_output
 import sys
+from multiprocessing.dummy import Pool as ThreadPool
+from itertools import repeat
 try:
     from os import readlink
 except ImportError:
@@ -453,12 +455,21 @@ def post_build(m, files, prefix, build_python, croot):
 
     check_symlinks(files, prefix, croot)
 
-    for f in files:
+    pool = ThreadPool(5)
+    
+    def multiprocess_mk_relative(m, f, prefix, build_python, osx_is_app, binary_relocation):
         if f.startswith('bin/'):
             fix_shebang(f, prefix=prefix, build_python=build_python, osx_is_app=osx_is_app)
         if binary_relocation is True or (isinstance(binary_relocation, list) and
                                          f in binary_relocation):
             mk_relative(m, f, prefix)
+        return 
+
+    pool = ThreadPool(10) 
+    results = pool.starmap(multiprocess_mk_relative, zip(repeat(m), files, repeat(prefix), repeat(build_python), repeat(osx_is_app), repeat(binary_relocation)))
+    # close the pool and wait for the work to finish 
+    pool.close() 
+    pool.join() 
 
 
 def check_symlinks(files, prefix, croot):
